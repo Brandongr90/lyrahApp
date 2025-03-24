@@ -7,12 +7,25 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		B39E4EA82D80BE03003A1138 /* lyrah.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = lyrah.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B39E4F4C2D81EBD1003A1138 /* lyrah.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = lyrah.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B39E4F4E2D81EBD8003A1138 /* Exceptions for "lyrah" folder in "lyrah" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B39E4EA72D80BE03003A1138 /* lyrah */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		B39E4EAA2D80BE03003A1138 /* lyrah */ = {
+		B39E4EEB2D80D745003A1138 /* lyrah */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B39E4F4E2D81EBD8003A1138 /* Exceptions for "lyrah" folder in "lyrah" target */,
+			);
 			path = lyrah;
 			sourceTree = "<group>";
 		};
@@ -32,17 +45,9 @@
 		B39E4E9F2D80BE03003A1138 = {
 			isa = PBXGroup;
 			children = (
-				B39E4EAA2D80BE03003A1138 /* lyrah */,
-				B39E4EA92D80BE03003A1138 /* Products */,
+				B39E4EEB2D80D745003A1138 /* lyrah */,
+				B39E4F4C2D81EBD1003A1138 /* lyrah.app */,
 			);
-			sourceTree = "<group>";
-		};
-		B39E4EA92D80BE03003A1138 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				B39E4EA82D80BE03003A1138 /* lyrah.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -61,13 +66,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				B39E4EAA2D80BE03003A1138 /* lyrah */,
+				B39E4EEB2D80D745003A1138 /* lyrah */,
 			);
 			name = lyrah;
 			packageProductDependencies = (
 			);
 			productName = lyrah;
-			productReference = B39E4EA82D80BE03003A1138 /* lyrah.app */;
+			productReference = B39E4F4C2D81EBD1003A1138 /* lyrah.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -95,7 +100,7 @@
 			mainGroup = B39E4E9F2D80BE03003A1138;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = B39E4EA92D80BE03003A1138 /* Products */;
+			productRefGroup = B39E4E9F2D80BE03003A1138;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -255,6 +260,7 @@
 				DEVELOPMENT_TEAM = N66J85USZ8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = lyrah/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +290,7 @@
 				DEVELOPMENT_TEAM = N66J85USZ8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = lyrah/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
