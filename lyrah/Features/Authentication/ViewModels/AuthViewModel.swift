@@ -7,6 +7,7 @@
 
 import SwiftUI
 import AuthenticationServices
+import Combine
 // import GoogleSignIn
 
 enum AuthState: Equatable {
@@ -14,7 +15,7 @@ enum AuthState: Equatable {
     case authenticating
     case authenticated(User)  // Usuario autenticado, puede tener o no perfil
     case error(String)        // Error ocurrido durante la autenticación
-
+    
     // Implementación manual de `Equatable`
     static func == (lhs: AuthState, rhs: AuthState) -> Bool {
         switch (lhs, rhs) {
@@ -46,38 +47,40 @@ class AuthViewModel: ObservableObject {
     @Published var showAlert = false
     @Published var alertMessage = ""
     
-    // MARK: - User Persistence
-    
-    private let userDefaultsKey = "loggedInUser"
-    private let tokenDefaultsKey = "authToken"
+    private let authService = AuthService()
+    private let profileService = ProfileService()
     
     init() {
         // Intentar restaurar la sesión al iniciar
         loadSavedUserSession()
     }
     
-    // MARK: - Auth Methods
+    // Actualizamos los métodos para usar async/await con Task
     
     func login() {
         guard validateLoginCredentials() else { return }
         
         authState = .authenticating
         
-        APIService.shared.login(
-            email: loginCredentials.email.isEmpty ? nil : loginCredentials.email,
-            username: loginCredentials.username.isEmpty ? nil : loginCredentials.username,
-            password: loginCredentials.password
-        ) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
+        Task {
+            do {
+                let (user, _) = try await authService.login(
+                    email: loginCredentials.email.isEmpty ? nil : loginCredentials.email,
+                    username: loginCredentials.username.isEmpty ? nil : loginCredentials.username,
+                    password: loginCredentials.password
+                )
                 
-                switch result {
-                case .success((let user, let token)):
+                DispatchQueue.main.async {
                     self.authState = .authenticated(user)
-                    self.saveUserSession(user: user, token: token)
                     self.checkIfUserHasProfile(userId: user.id)
-                case .failure(let error):
+                }
+            } catch let error as APIError {
+                DispatchQueue.main.async {
                     self.handleAuthError(error)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.handleAuthError(.unknown)
                 }
             }
         }
@@ -88,25 +91,58 @@ class AuthViewModel: ObservableObject {
         
         authState = .authenticating
         
-        APIService.shared.register(
-            username: registerCredentials.username,
-            email: registerCredentials.email,
-            password: registerCredentials.password
-        ) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
+        Task {
+            do {
+                let _ = try await authService.register(
+                    username: registerCredentials.username,
+                    email: registerCredentials.email,
+                    password: registerCredentials.password
+                )
                 
-                switch result {
-                case .success(let user):
+                DispatchQueue.main.async {
                     // Después de registrarse, intentamos iniciar sesión automáticamente
                     self.loginAfterRegistration()
-                case .failure(let error):
+                }
+            } catch let error as APIError {
+                DispatchQueue.main.async {
                     self.handleAuthError(error)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.handleAuthError(.unknown)
                 }
             }
         }
     }
     
+    func logout() {
+        authService.logout()
+        
+        // Reseteamos el estado
+        authState = .unauthenticated
+        onboardingState = .notStarted
+        loginCredentials = LoginCredentials()
+    }
+    
+    func checkIfUserHasProfile(userId: String) {
+        Task {
+            do {
+                let profile = try await profileService.getProfile(forUserId: userId)
+                
+                DispatchQueue.main.async {
+                    // Si el perfil existe, marcamos onboarding como completado
+                    self.onboardingState = profile != nil ? .completed : .notStarted
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    // Si hay un error, asumimos que no hay perfil
+                    self.onboardingState = .notStarted
+                }
+            }
+        }
+    }
+    
+    // El resto de los métodos (helpers, validación, etc.) se mantienen igual
     private func loginAfterRegistration() {
         // Transferimos las credenciales de registro a login
         loginCredentials = registerCredentials
@@ -115,53 +151,6 @@ class AuthViewModel: ObservableObject {
         // Iniciamos sesión con las credenciales del registro
         login()
     }
-    
-    func signInWithApple() {
-        // Implementaremos esto en un paso posterior
-        // Por ahora mostramos mensaje informativo
-        self.showAlert = true
-        self.alertMessage = "Inicio de sesión con Apple será implementado próximamente"
-    }
-    
-    func signInWithGoogle() {
-        // Implementaremos esto en un paso posterior
-        // Por ahora mostramos mensaje informativo
-        self.showAlert = true
-        self.alertMessage = "Inicio de sesión con Google será implementado próximamente"
-    }
-    
-    func logout() {
-        // Limpiamos datos de sesión
-        UserDefaults.standard.removeObject(forKey: userDefaultsKey)
-        UserDefaults.standard.removeObject(forKey: tokenDefaultsKey)
-        APIService.shared.clearAuthToken()
-        
-        // Reseteamos el estado
-        authState = .unauthenticated
-        onboardingState = .notStarted
-        loginCredentials = LoginCredentials()
-    }
-    
-    // MARK: - Profile Methods
-    
-    func checkIfUserHasProfile(userId: String) {
-        APIService.shared.getProfile(forUserId: userId) { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                
-                switch result {
-                case .success(let profile):
-                    // Si el perfil existe, marcamos onboarding como completado
-                    self.onboardingState = profile != nil ? .completed : .notStarted
-                case .failure:
-                    // Si hay un error, asumimos que no hay perfil
-                    self.onboardingState = .notStarted
-                }
-            }
-        }
-    }
-    
-    // MARK: - Helper Methods
     
     private func validateLoginCredentials() -> Bool {
         // Al menos debe haber un email o username
@@ -228,32 +217,13 @@ class AuthViewModel: ObservableObject {
         self.authState = .error(self.alertMessage)
     }
     
-    private func saveUserSession(user: User, token: String) {
-        // Guardamos el usuario en UserDefaults
-        if let userData = try? JSONEncoder().encode(user) {
-            UserDefaults.standard.set(userData, forKey: userDefaultsKey)
-        }
-        
-        // Guardamos el token
-        UserDefaults.standard.set(token, forKey: tokenDefaultsKey)
-        APIService.shared.setAuthToken(token)
-    }
-    
     private func loadSavedUserSession() {
-        // Intentamos cargar el token
-        if let token = UserDefaults.standard.string(forKey: tokenDefaultsKey) {
-            APIService.shared.setAuthToken(token)
+        if let (user, token) = authService.loadSavedUserSession() {
+            // Restauramos el estado de autenticación
+            self.authState = .authenticated(user)
             
-            // Intentamos cargar el usuario
-            if let userData = UserDefaults.standard.data(forKey: userDefaultsKey),
-               let user = try? JSONDecoder().decode(User.self, from: userData) {
-                
-                // Restauramos el estado de autenticación
-                self.authState = .authenticated(user)
-                
-                // Verificamos si el usuario tiene perfil
-                self.checkIfUserHasProfile(userId: user.id)
-            }
+            // Verificamos si el usuario tiene perfil
+            self.checkIfUserHasProfile(userId: user.id)
         }
     }
 }

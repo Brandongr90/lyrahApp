@@ -7,15 +7,6 @@
 
 import Foundation
 
-enum APIError: Error {
-    case invalidURL
-    case invalidResponse
-    case networkError(Error)
-    case decodingError(Error)
-    case serverError(String)
-    case unknown
-}
-
 class APIService {
     // Cambiar a la URL de tu API cuando esté lista
     private let baseURL = "http://localhost:3000/api"
