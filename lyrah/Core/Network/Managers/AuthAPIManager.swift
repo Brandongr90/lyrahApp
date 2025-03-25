@@ -61,15 +61,35 @@ class AuthAPIManager {
             "role_id": 2
         ]
         
-        let response: RegisterResponse = try await networkConfig.request(
-            endpoint: AuthEndpoint.register,
-            body: body
-        )
+        // Obtener respuesta cruda
+        let url = URL(string: "\(networkConfig.baseURL)\(AuthEndpoint.register.path)")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
-        if response.success, let user = response.data {
-            return user
-        } else {
-            throw APIError.serverError(response.message ?? "Error desconocido")
+        let (data, _) = try await URLSession.shared.data(for: request)
+        
+        // Imprimir respuesta para depurar
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("Respuesta del servidor (register): \(jsonString)")
+        }
+        
+        // Intentar decodificar
+        do {
+            let response = try JSONDecoder().decode(RegisterResponse.self, from: data)
+            
+            if response.success, let user = response.data {
+                // Agregar hasProfile manualmente
+                var userWithProfile = user
+                userWithProfile.hasProfile = false
+                return userWithProfile
+            } else {
+                throw APIError.serverError(response.message ?? "Error desconocido")
+            }
+        } catch {
+            print("Error de decodificación: \(error)")
+            throw APIError.decodingError(error)
         }
     }
 }

@@ -21,6 +21,13 @@ class ProfileAPIManager {
         let error: String?
     }
     
+    struct CreateProfileResponse: Decodable {
+        let success: Bool
+        let message: String?
+        let data: Profile?
+        let error: String?
+    }
+    
     func getProfile(forUserId userId: String) async throws -> Profile? {
         let response: ProfileResponse = try await networkConfig.request(
             endpoint: ProfileEndpoint.getProfile(userId: userId)
@@ -35,6 +42,17 @@ class ProfileAPIManager {
             } else {
                 throw APIError.serverError(response.message ?? "Error desconocido")
             }
+        }
+    }
+    
+    func createProfile(profileData: [String: Any]) async throws {
+        let response: CreateProfileResponse = try await networkConfig.request(
+            endpoint: ProfileEndpoint.createProfile,
+            body: profileData
+        )
+        
+        if !response.success {
+            throw APIError.serverError(response.message ?? "Error al crear el perfil")
         }
     }
 }

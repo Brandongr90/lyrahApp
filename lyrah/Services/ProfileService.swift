@@ -17,4 +17,8 @@ class ProfileService {
     func getProfile(forUserId userId: String) async throws -> Profile? {
         return try await apiManager.getProfile(forUserId: userId)
     }
+    
+    func createProfile(profileData: [String: Any]) async throws {
+        try await apiManager.createProfile(profileData: profileData)
+    }
 }

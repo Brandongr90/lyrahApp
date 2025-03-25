@@ -94,11 +94,11 @@ struct LoginView: View {
                     // Botones de inicio de sesión social
                     VStack(spacing: 12) {
                         SocialSignInButton(service: "apple") {
-                            authViewModel.signInWithApple()
+                            
                         }
                         
                         SocialSignInButton(service: "google") {
-                            authViewModel.signInWithGoogle()
+                            
                         }
                     }
                     

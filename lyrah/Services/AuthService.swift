@@ -46,6 +46,7 @@ class AuthService {
                   return nil
               }
         
+        print("Sesión cargada exitosamente para el usuario: \(user.username) con ID: \(user.id)")
         return (user, token)
     }
     
@@ -57,5 +58,8 @@ class AuthService {
         
         // Guardamos el token
         UserDefaults.standard.set(token, forKey: tokenDefaultsKey)
+        
+        // NetworkConfig para las futuras peticiones
+        NetworkConfig.default.setAuthToken(token)
     }
 }

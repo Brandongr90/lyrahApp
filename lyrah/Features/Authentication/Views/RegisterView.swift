@@ -33,13 +33,6 @@ struct RegisterView: View {
                     
                     // Formulario de registro
                     VStack(spacing: 20) {
-                        // Campo de nombre de usuario
-                        LyrahTextField(
-                            placeholder: "Nombre de usuario",
-                            text: $authViewModel.registerCredentials.username,
-                            icon: "person.fill"
-                        )
-                        
                         // Campo de email
                         LyrahTextField(
                             placeholder: "Email",
@@ -51,6 +44,14 @@ struct RegisterView: View {
                         LyrahTextField(
                             placeholder: "Contraseña",
                             text: $authViewModel.registerCredentials.password,
+                            icon: "lock.fill",
+                            isSecure: true
+                        )
+                        
+                        // Campo de confirmar contraseña
+                        LyrahTextField(
+                            placeholder: "Confirmar contraseña",
+                            text: $authViewModel.confirmPassword,
                             icon: "lock.fill",
                             isSecure: true
                         )
@@ -92,11 +93,11 @@ struct RegisterView: View {
                     // Botones de inicio de sesión social
                     VStack(spacing: 12) {
                         SocialSignInButton(service: "apple") {
-                            authViewModel.signInWithApple()
+                            
                         }
                         
                         SocialSignInButton(service: "google") {
-                            authViewModel.signInWithGoogle()
+                            
                         }
                     }
                     

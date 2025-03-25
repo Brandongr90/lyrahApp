@@ -42,6 +42,7 @@ class AuthViewModel: ObservableObject {
     @Published var authState: AuthState = .unauthenticated
     @Published var onboardingState: OnboardingState = .notStarted
     @Published var loginCredentials = LoginCredentials()
+    @Published var confirmPassword: String = ""
     @Published var isShowingRegister = false
     @Published var registerCredentials = LoginCredentials()
     @Published var showAlert = false
@@ -93,15 +94,31 @@ class AuthViewModel: ObservableObject {
         
         Task {
             do {
-                let _ = try await authService.register(
-                    username: registerCredentials.username,
+                // 1. Registrar usuario
+                let username = "user_" + registerCredentials.email.components(separatedBy: "@").first!
+                let user = try await authService.register(
+                    username: username,
                     email: registerCredentials.email,
                     password: registerCredentials.password
                 )
                 
+                print("Registro exitoso para: \(user.username)")
+                
+                // 2. Iniciar sesión automáticamente para obtener el token
+                let (loggedUser, _) = try await authService.login(
+                    email: registerCredentials.email,
+                    password: registerCredentials.password
+                )
+                
+                // 3. El token y usuario ya se guardan dentro de la función login
+                
                 DispatchQueue.main.async {
-                    // Después de registrarse, intentamos iniciar sesión automáticamente
-                    self.loginAfterRegistration()
+                    self.authState = .authenticated(loggedUser)
+                    self.onboardingState = .notStarted // Para que muestre el onboarding
+                    
+                    // Limpiar datos sensibles
+                    self.registerCredentials.password = ""
+                    self.confirmPassword = ""
                 }
             } catch let error as APIError {
                 DispatchQueue.main.async {
@@ -113,6 +130,19 @@ class AuthViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    // Agrega esta nueva función para crear el perfil del usuario
+    private func createUserProfile(userId: String) async throws {
+        // Creamos un perfil básico inicialmente
+        let profileData: [String: Any] = [
+            "user_id": userId,
+            "first_name": "",
+            "last_name": ""
+        ]
+        
+        // Llamamos al API para crear el perfil
+        try await profileService.createProfile(profileData: profileData)
     }
     
     func logout() {
@@ -171,13 +201,6 @@ class AuthViewModel: ObservableObject {
     }
     
     private func validateRegisterCredentials() -> Bool {
-        // Validar username
-        if registerCredentials.username.isEmpty {
-            self.showAlert = true
-            self.alertMessage = "Por favor ingresa un nombre de usuario"
-            return false
-        }
-        
         // Validar email
         if registerCredentials.email.isEmpty || !isValidEmail(registerCredentials.email) {
             self.showAlert = true
@@ -189,6 +212,13 @@ class AuthViewModel: ObservableObject {
         if registerCredentials.password.count < 6 {
             self.showAlert = true
             self.alertMessage = "La contraseña debe tener al menos 6 caracteres"
+            return false
+        }
+        
+        // Validar confirmación de contraseña
+        if registerCredentials.password != confirmPassword {
+            self.showAlert = true
+            self.alertMessage = "Las contraseñas no coinciden"
             return false
         }
         
@@ -218,7 +248,7 @@ class AuthViewModel: ObservableObject {
     }
     
     private func loadSavedUserSession() {
-        if let (user, token) = authService.loadSavedUserSession() {
+        if let (user, _) = authService.loadSavedUserSession() {
             // Restauramos el estado de autenticación
             self.authState = .authenticated(user)
             

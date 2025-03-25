@@ -13,7 +13,7 @@ struct User: Codable, Identifiable, Equatable {
     let email: String
     let isActive: Bool
     let isVerified: Bool
-    var hasProfile: Bool
+    var hasProfile: Bool = false
     
     enum CodingKeys: String, CodingKey {
         case id = "user_id"
@@ -21,7 +21,18 @@ struct User: Codable, Identifiable, Equatable {
         case email
         case isActive = "is_active"
         case isVerified = "is_verified"
-        case hasProfile = "has_profile"  // Este campo lo añadiremos manualmente según la API
+        // case hasProfile = "has_profile"  // Este campo lo añadiremos manualmente según la API
+    }
+    
+    // Añadir init desde Decoder para manejar campos faltantes
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        username = try container.decode(String.self, forKey: .username)
+        email = try container.decode(String.self, forKey: .email)
+        isActive = try container.decode(Bool.self, forKey: .isActive)
+        isVerified = try container.decode(Bool.self, forKey: .isVerified)
+        // hasProfile no se decodifica, usamos el valor por defecto
     }
 }
 
