@@ -14,24 +14,20 @@ class AuthAPIManager {
         self.networkConfig = networkConfig
     }
     
-    struct LoginResponse: Decodable {
-        let success: Bool
-        let message: String?
-        let data: User?
-        let token: String?
-        let error: String?
-    }
-    
     struct RegisterResponse: Decodable {
         let success: Bool
         let message: String?
-        let data: User?
+        let data: RegisterData?
         let error: String?
+    }
+    
+    struct RegisterData: Decodable {
+        let user: User
+        let token: String
     }
     
     func login(email: String? = nil, username: String? = nil, password: String) async throws -> (User, String) {
         var body: [String: Any] = ["password": password]
-        
         if let email = email, !email.isEmpty {
             body["email"] = email
         } else if let username = username, !username.isEmpty {
@@ -40,16 +36,25 @@ class AuthAPIManager {
             throw APIError.serverError("Se requiere email o username")
         }
         
-        let response: LoginResponse = try await networkConfig.request(
-            endpoint: AuthEndpoint.login,
-            body: body
-        )
+        // Para debug, imprime la URL y el body
+        if let jsonData = try? JSONSerialization.data(withJSONObject: body),
+           let bodyString = String(data: jsonData, encoding: .utf8) {
+        }
         
-        if response.success, let user = response.data, let token = response.token {
-            networkConfig.setAuthToken(token)
-            return (user, token)
-        } else {
-            throw APIError.serverError(response.message ?? "Error desconocido")
+        do {
+            let response: LoginResponse = try await networkConfig.request(
+                endpoint: AuthEndpoint.login,
+                body: body
+            )
+            
+            if response.success, let loginData = response.data {
+                networkConfig.setAuthToken(loginData.token)
+                return (loginData.user.toUser(), loginData.token)
+            } else {
+                throw APIError.serverError(response.message ?? "Error desconocido")
+            }
+        } catch {
+            throw error
         }
     }
     
@@ -69,26 +74,23 @@ class AuthAPIManager {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
         let (data, _) = try await URLSession.shared.data(for: request)
-        
-        // Imprimir respuesta para depurar
-        if let jsonString = String(data: data, encoding: .utf8) {
-            print("Respuesta del servidor (register): \(jsonString)")
-        }
-        
         // Intentar decodificar
         do {
             let response = try JSONDecoder().decode(RegisterResponse.self, from: data)
             
-            if response.success, let user = response.data {
-                // Agregar hasProfile manualmente
-                var userWithProfile = user
+            if response.success, let registerData = response.data {
+                // Agregar hasProfile manualmente y retornar el usuario
+                var userWithProfile = registerData.user
                 userWithProfile.hasProfile = false
+                
+                // Importante: también deberíamos guardar el token aquí
+                networkConfig.setAuthToken(registerData.token)
+                
                 return userWithProfile
             } else {
                 throw APIError.serverError(response.message ?? "Error desconocido")
             }
         } catch {
-            print("Error de decodificación: \(error)")
             throw APIError.decodingError(error)
         }
     }

@@ -74,7 +74,9 @@ class APIService {
             do {
                 let response = try JSONDecoder().decode(LoginResponse.self, from: data)
                 
-                if response.success, let user = response.data, let token = response.token {
+                if response.success, let loginData = response.data {
+                    let user = loginData.user.toUser() // Convierte LoginUser a User
+                    let token = loginData.token
                     // Guardamos el token para futuras peticiones
                     self.authToken = token
                     completion(.success((user, token)))

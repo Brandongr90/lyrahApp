@@ -21,7 +21,6 @@ struct User: Codable, Identifiable, Equatable {
         case email
         case isActive = "is_active"
         case isVerified = "is_verified"
-        // case hasProfile = "has_profile"  // Este campo lo añadiremos manualmente según la API
     }
     
     // Añadir init desde Decoder para manejar campos faltantes
@@ -34,6 +33,16 @@ struct User: Codable, Identifiable, Equatable {
         isVerified = try container.decode(Bool.self, forKey: .isVerified)
         // hasProfile no se decodifica, usamos el valor por defecto
     }
+    
+    // Constructor manual para crear desde LoginUser
+    init(id: String, username: String, email: String, isActive: Bool, isVerified: Bool, hasProfile: Bool) {
+        self.id = id
+        self.username = username
+        self.email = email
+        self.isActive = isActive
+        self.isVerified = isVerified
+        self.hasProfile = hasProfile
+    }
 }
 
 struct LoginCredentials {
@@ -43,13 +52,10 @@ struct LoginCredentials {
     // Podemos usar email o username para login
 }
 
-struct LoginResponse: Codable {
+struct LoginResponse: Decodable {
     let success: Bool
     let message: String?
-    let data: User?
-    let token: String?
-    
-    // Estructuras adicionales para manejar errores
+    let data: LoginData?
     let error: String?
 }
 
@@ -58,4 +64,38 @@ struct RegisterResponse: Codable {
     let message: String?
     let data: User?
     let error: String?
+}
+
+struct LoginUser: Codable {
+    let id: String
+    let username: String
+    let email: String
+    let roleName: String
+    let isVerified: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case id = "user_id"
+        case username
+        case email
+        case roleName = "role_name"
+        case isVerified = "is_verified"
+    }
+    
+    // Metodo para convertir a User
+    func toUser() -> User {
+        return User(
+            id: id,
+            username: username,
+            email: email,
+            isActive: true,
+            isVerified: isVerified,
+            hasProfile: false
+        )
+    }
+}
+
+// Actualizar LoginData
+struct LoginData: Decodable {
+    let user: LoginUser
+    let token: String
 }

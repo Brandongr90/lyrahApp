@@ -94,8 +94,10 @@ class AuthViewModel: ObservableObject {
         
         Task {
             do {
+                print("Iniciando proceso de registro...")
                 // 1. Registrar usuario
                 let username = "user_" + registerCredentials.email.components(separatedBy: "@").first!
+                print("Intentando registro con username: \(username)")
                 let user = try await authService.register(
                     username: username,
                     email: registerCredentials.email,
@@ -103,17 +105,21 @@ class AuthViewModel: ObservableObject {
                 )
                 
                 print("Registro exitoso para: \(user.username)")
+                print("Estado del token después del registro: \(NetworkConfig.default.hasToken ? "Token obtenido" : "Sin token")")
                 
                 // 2. Iniciar sesión automáticamente para obtener el token
-                let (loggedUser, _) = try await authService.login(
+                print("Intentando inicio de sesión automático...")
+                let (loggedUser, loginToken) = try await authService.login(
                     email: registerCredentials.email,
                     password: registerCredentials.password
                 )
                 
-                // 3. El token y usuario ya se guardan dentro de la función login
+                print("Login exitoso para: \(loggedUser.username)")
+                print("Token obtenido: \(String(describing: loginToken.prefix(10)))...")
                 
                 DispatchQueue.main.async {
-                    self.authState = .authenticated(loggedUser)
+                    print("Actualizando UI después del login...")
+                    self.authState = .authenticated(user)
                     self.onboardingState = .notStarted // Para que muestre el onboarding
                     
                     // Limpiar datos sensibles
@@ -121,10 +127,12 @@ class AuthViewModel: ObservableObject {
                     self.confirmPassword = ""
                 }
             } catch let error as APIError {
+                print("Error de API: \(error)")
                 DispatchQueue.main.async {
                     self.handleAuthError(error)
                 }
             } catch {
+                print("Error desconocido: \(error)")
                 DispatchQueue.main.async {
                     self.handleAuthError(.unknown)
                 }

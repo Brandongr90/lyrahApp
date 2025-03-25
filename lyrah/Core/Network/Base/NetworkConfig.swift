@@ -25,6 +25,10 @@ class NetworkConfig {
     let baseURL: String
     private var authToken: String?
     
+    var hasToken: Bool {
+        return authToken != nil
+    }
+    
     init(baseURL: String) {
         self.baseURL = baseURL
     }
@@ -59,10 +63,28 @@ class NetworkConfig {
         }
         
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // Imprimir respuesta para debug
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("Respuesta del servidor: \(jsonString)")
+            }
+            
+            // Verificar si hay respuesta HTTP
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.invalidResponse
+            }
+            
+            // Verificar el código de estado HTTP
+            if httpResponse.statusCode >= 400 {
+                throw APIError.serverError("Error de servidor: \(httpResponse.statusCode)")
+            }
+            
+            // Intentar decodificar
             return try JSONDecoder().decode(T.self, from: data)
-        } catch let error as DecodingError {
-            throw APIError.decodingError(error)
+        } catch let decodingError as DecodingError {
+            print("Error de decodificación en request: \(decodingError)")
+            throw APIError.decodingError(decodingError)
         } catch {
             throw APIError.networkError(error)
         }
