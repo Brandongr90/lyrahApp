@@ -15,7 +15,15 @@ class ProfileService {
     }
     
     func getProfile(forUserId userId: String) async throws -> Profile? {
-        return try await apiManager.getProfile(forUserId: userId)
+        do {
+            return try await apiManager.getProfile(forUserId: userId)
+        } catch let error as APIError {
+            if case .serverError(let message) = error, message.contains("no encontrado") {
+                // No es realmente un error, solo significa que no hay perfil
+                return nil
+            }
+            throw error
+        }
     }
     
     func createProfile(profileData: [String: Any]) async throws {
