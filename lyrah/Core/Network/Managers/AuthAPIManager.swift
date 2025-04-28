@@ -38,7 +38,7 @@ class AuthAPIManager {
         
         // Para debug, imprime la URL y el body
         if let jsonData = try? JSONSerialization.data(withJSONObject: body),
-           let bodyString = String(data: jsonData, encoding: .utf8) {
+           let _ = String(data: jsonData, encoding: .utf8) {
         }
         
         do {

@@ -26,8 +26,8 @@ struct Profile: Codable, Identifiable {
     let postalCode: String?
     
     // Las áreas de mejora y actividades serán arrays de opciones
-    var improvementAreas: [ImprovementAreaOption]?
-    var wellnessActivities: [WellnessActivityOption]?
+    var improvementAreas: [ImprovementAreaOptionProfile]?
+    var wellnessActivities: [WellnessActivityOptionProfile]?
     
     enum CodingKeys: String, CodingKey {
         case id = "profile_id"
@@ -49,7 +49,7 @@ struct Profile: Codable, Identifiable {
     }
 }
 
-struct ImprovementAreaOption: Codable, Identifiable {
+struct ImprovementAreaOptionProfile: Codable, Identifiable {
     let id: Int
     let name: String
     let description: String?
@@ -61,7 +61,7 @@ struct ImprovementAreaOption: Codable, Identifiable {
     }
 }
 
-struct WellnessActivityOption: Codable, Identifiable {
+struct WellnessActivityOptionProfile: Codable, Identifiable {
     let id: Int
     let name: String
     let description: String?

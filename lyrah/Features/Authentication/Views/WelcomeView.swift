@@ -17,7 +17,7 @@ struct WelcomeView: View {
             ZStack {
                 // Fondo
                 LinearGradient(
-                    gradient: Gradient(colors: [Color.black, Color.blueButtonDark]),
+                    gradient: Gradient(colors: [Color.black, Color.bgIndigo]),
                     startPoint: .top,
                     endPoint: .bottom
                 )

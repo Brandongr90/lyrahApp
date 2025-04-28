@@ -38,6 +38,7 @@ enum OnboardingState {
     case completed      // El usuario ya tiene perfil
 }
 
+@MainActor
 class AuthViewModel: ObservableObject {
     @Published var authState: AuthState = .unauthenticated
     @Published var onboardingState: OnboardingState = .notStarted
@@ -63,7 +64,9 @@ class AuthViewModel: ObservableObject {
         
         authState = .authenticating
         
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+            
             do {
                 let (user, _) = try await authService.login(
                     email: loginCredentials.email.isEmpty ? nil : loginCredentials.email,
@@ -71,18 +74,12 @@ class AuthViewModel: ObservableObject {
                     password: loginCredentials.password
                 )
                 
-                DispatchQueue.main.async {
-                    self.authState = .authenticated(user)
-                    self.checkIfUserHasProfile(userId: user.id)
-                }
+                self.authState = .authenticated(user)
+                self.checkIfUserHasProfile(userId: user.id)
             } catch let error as APIError {
-                DispatchQueue.main.async {
-                    self.handleAuthError(error)
-                }
+                self.handleAuthError(error)
             } catch {
-                DispatchQueue.main.async {
-                    self.handleAuthError(.unknown)
-                }
+                self.handleAuthError(.unknown)
             }
         }
     }
@@ -92,7 +89,9 @@ class AuthViewModel: ObservableObject {
         
         authState = .authenticating
         
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+            
             do {
                 print("Iniciando proceso de registro...")
                 // 1. Registrar usuario
@@ -117,25 +116,16 @@ class AuthViewModel: ObservableObject {
                 print("Login exitoso para: \(loggedUser.username)")
                 print("Token obtenido: \(String(describing: loginToken.prefix(10)))...")
                 
-                DispatchQueue.main.async {
-                    print("Actualizando UI después del login...")
-                    self.authState = .authenticated(user)
-                    self.onboardingState = .notStarted // Para que muestre el onboarding
-                    
-                    // Limpiar datos sensibles
-                    self.registerCredentials.password = ""
-                    self.confirmPassword = ""
-                }
+                self.authState = .authenticated(user)
+                self.onboardingState = .notStarted
+                
+                self.registerCredentials.password = ""
+                self.confirmPassword = ""
+                
             } catch let error as APIError {
-                print("Error de API: \(error)")
-                DispatchQueue.main.async {
-                    self.handleAuthError(error)
-                }
+                self.handleAuthError(error)
             } catch {
-                print("Error desconocido: \(error)")
-                DispatchQueue.main.async {
-                    self.handleAuthError(.unknown)
-                }
+                self.handleAuthError(.unknown)
             }
         }
     }
@@ -163,19 +153,16 @@ class AuthViewModel: ObservableObject {
     }
     
     func checkIfUserHasProfile(userId: String) {
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
+            
             do {
                 let profile = try await profileService.getProfile(forUserId: userId)
+                self.onboardingState = profile != nil ? .completed : .notStarted
                 
-                DispatchQueue.main.async {
-                    // Si el perfil existe, marcamos onboarding como completado
-                    self.onboardingState = profile != nil ? .completed : .notStarted
-                }
             } catch {
-                DispatchQueue.main.async {
-                    // Si hay un error, asumimos que no hay perfil
-                    self.onboardingState = .notStarted
-                }
+                // Si hay un error, asumimos que no hay perfil
+                self.onboardingState = .notStarted
             }
         }
     }

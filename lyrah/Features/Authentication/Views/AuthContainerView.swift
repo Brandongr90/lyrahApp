@@ -15,13 +15,39 @@ struct AuthContainerView: View {
             // Mostramos la vista correspondiente según el estado de autenticación
             if case .authenticated(let user) = authViewModel.authState {
                 // Si el usuario está autenticado, verificamos si necesita completar el onboarding
-                if authViewModel.onboardingState == .notStarted {
-                    // Aquí mostraríamos la vista de onboarding
+                if !user.hasProfile {
+                    // Si no tiene perfil, mostrar el flujo de onboarding nuevo
+                    OnboardingRegisterGeneralView()
+                } else if authViewModel.onboardingState == .notStarted {
+                    // Si tiene perfil pero falta el onboarding tradicional de la app
                     OnboardingPlaceholderView()
                 } else {
-                    // Mostramos la vista principal de la app
+                    // Mostrar la vista principal de la app
                     HomeScreenPlaceholderView(username: user.username)
                 }
+            } else if case .authenticating = authViewModel.authState {
+                // Mostrar pantalla de carga durante autenticación
+                LoadingView()
+            } else if case .error(let message) = authViewModel.authState {
+                // Mostrar pantalla de error
+                VStack(spacing: 20) {
+                    Text("Ha ocurrido un error")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    
+                    Text(message)
+                        .multilineTextAlignment(.center)
+                        .foregroundColor(.secondary)
+                    
+                    Button("Reintentar") {
+                        authViewModel.authState = .unauthenticated
+                    }
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(Color.adicionalOne)
+                    .cornerRadius(10)
+                }
+                .padding()
             } else {
                 // Si el usuario no está autenticado, mostramos la pantalla de bienvenida
                 // o las vistas de login/registro según corresponda
@@ -37,6 +63,13 @@ struct AuthContainerView: View {
                     }
                 }
             }
+        }
+        .alert(isPresented: $authViewModel.showAlert) {
+            Alert(
+                title: Text("Aviso"),
+                message: Text(authViewModel.alertMessage),
+                dismissButton: .default(Text("Aceptar"))
+            )
         }
     }
 }
